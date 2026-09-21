@@ -122,8 +122,14 @@ export function DashboardScreen({
           </View>
 
           {/* Group Settlement Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Group Settlement (Minimum Transfers)</Text>
+          <Pressable
+            style={styles.card}
+            onPress={() => navigation.navigate('Settlement')}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.cardLabel}>Group Settlement (Minimum Transfers)</Text>
+              <Text style={{ fontSize: 12, color: '#243f7a', fontWeight: '600' }}>Details →</Text>
+            </View>
             {summary.data.transfers.length === 0 ? (
               <Text style={styles.mutedText}>Everyone is currently settled for this month.</Text>
             ) : (
@@ -140,7 +146,7 @@ export function DashboardScreen({
                 </View>
               ))
             )}
-          </View>
+          </Pressable>
         </View>
       ) : null}
 
@@ -218,6 +224,12 @@ export function DashboardScreen({
 
       {/* Navigation Grid */}
       <View style={styles.navGrid}>
+        <Pressable
+          onPress={() => navigation.navigate('Settlement')}
+          style={styles.navButton}
+        >
+          <Text style={styles.navButtonText}>Settlement UI</Text>
+        </Pressable>
         <Pressable
           onPress={() => navigation.navigate('History')}
           style={styles.navButton}

@@ -5,6 +5,7 @@ export type RootStackParamList = {
   MonthlySummary: undefined;
   Clearance: undefined;
   Members: undefined;
+  Settlement: undefined;
   PairExpenses: undefined;
   PairDetail: { counterpartyId: string; counterpartyName: string };
   AddPairExpense: { counterpartyId?: string };

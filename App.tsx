@@ -25,6 +25,7 @@ import { HistoryScreen } from './src/features/ledger/HistoryScreen';
 import { MonthlySummaryScreen } from './src/features/periods/MonthlySummaryScreen';
 import { ClearanceScreen } from './src/features/clearance/ClearanceScreen';
 import { MembersScreen } from './src/features/members/MembersScreen';
+import { SettlementScreen } from './src/features/settlement/SettlementScreen';
 import { PairExpensesScreen } from './src/features/bilateral/PairExpensesScreen';
 import { PairDetailScreen } from './src/features/bilateral/PairDetailScreen';
 import { AddPairExpenseScreen } from './src/features/bilateral/AddPairExpenseScreen';
@@ -126,6 +127,11 @@ function AppGate() {
           name="Members"
           component={MembersScreen}
           options={{ title: 'Group Members' }}
+        />
+        <Stack.Screen
+          name="Settlement"
+          component={SettlementScreen}
+          options={{ title: 'Settlement' }}
         />
         <Stack.Screen
           name="PairExpenses"
