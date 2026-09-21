@@ -92,6 +92,13 @@ export function generateTransfers(balances: readonly Pick<Balance, 'memberId' | 
   return transfers;
 }
 
+export interface BilateralEntry {
+  payerMemberId: MemberId;
+  counterpartyMemberId: MemberId;
+  amountPaise: bigint;
+  entryType: 'BILATERAL_EXPENSE' | 'BILATERAL_REVERSAL' | 'BILATERAL_ADJUSTMENT';
+}
+
 /** Positive means `memberA` should receive money from `memberB`. */
 export function calculateBilateralBalance(
   memberA: MemberId,
@@ -108,6 +115,20 @@ export function calculateBilateralBalance(
   return result;
 }
 
+export function calculateBilateralLedger(
+  memberA: MemberId,
+  memberB: MemberId,
+  entries: readonly BilateralEntry[],
+): bigint {
+  const signedEntries = entries.map((e) => ({
+    payerMemberId: e.payerMemberId,
+    counterpartyMemberId: e.counterpartyMemberId,
+    signedAmountPaise: (e.entryType === 'BILATERAL_REVERSAL' ? -1n : 1n) * e.amountPaise,
+  }));
+  return calculateBilateralBalance(memberA, memberB, signedEntries);
+}
+
 export function assertZeroSum(values: readonly bigint[]): void {
   if (values.reduce((sum, value) => sum + value, 0n) !== 0n) throw new Error('Balance vector is not zero-sum.');
 }
+

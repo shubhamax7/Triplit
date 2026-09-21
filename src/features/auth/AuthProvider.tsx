@@ -1,5 +1,6 @@
 import { PropsWithChildren, createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface AuthState {
@@ -21,12 +22,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
     const client = getSupabase();
+    const applyAuthRedirect = async (url: string | null) => {
+      if (!url) return;
+      const fragment = url.split('#')[1];
+      if (!fragment) return;
+      const params = new URLSearchParams(fragment);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (!accessToken || !refreshToken) return;
+      const { data, error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (!error) setSession(data.session);
+    };
+    void Linking.getInitialURL().then(applyAuthRedirect);
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => void applyAuthRedirect(url));
     void client.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setIsLoading(false);
     });
     const { data: subscription } = client.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
-    return () => subscription.subscription.unsubscribe();
+    return () => {
+      linkingSubscription.remove();
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -35,7 +52,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         session,
         isLoading,
         async signInWithMagicLink(email) {
-          const { error } = await getSupabase().auth.signInWithOtp({ email });
+          const { error } = await getSupabase().auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: 'triplit://auth/callback' },
+          });
           if (error) throw error;
         },
         async signOut() {
