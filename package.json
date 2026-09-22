@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "eas-cli": "^14.0.0",
     "typescript": "~6.0.3",
     "vitest": "^5.0.1"
   },
@@ -34,7 +33,7 @@
     "web": "expo start --web",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "build:apk": "eas-cli build -p android --profile preview"
+    "build:apk": "npx eas build -p android --profile preview"
   },
   "private": true
 }
