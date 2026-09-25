@@ -18,6 +18,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { z } from 'zod';
 import { createBilateralTransaction } from './api';
 import { parseAmountToPaise } from '../../lib/currency';
+import { generateUUID } from '../../lib/uuid';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
 import type { RootStackParamList } from '../../navigation/types';
@@ -43,7 +44,7 @@ export function AddPairExpenseScreen({
 }: NativeStackScreenProps<RootStackParamList, 'AddPairExpense'>) {
   const queryClient = useQueryClient();
   const { session } = useAuth();
-  const idempotencyKey = useRef(crypto.randomUUID());
+  const idempotencyKey = useRef(generateUUID());
 
   const initialCounterpartyId = route.params?.counterpartyId;
   const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<string | null>(
@@ -103,7 +104,7 @@ export function AddPairExpenseScreen({
       queryClient.invalidateQueries({ queryKey: ['bilateral-pairs'] });
       queryClient.invalidateQueries({ queryKey: ['bilateral-pair-detail'] });
       reset();
-      idempotencyKey.current = crypto.randomUUID();
+      idempotencyKey.current = generateUUID();
       navigation.goBack();
     },
     onError: (err: any) => {

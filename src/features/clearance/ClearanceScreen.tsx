@@ -18,6 +18,7 @@ import {
 } from './api';
 import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
+import { generateUUID } from '../../lib/uuid';
 
 export function ClearanceScreen() {
   const queryClient = useQueryClient();
@@ -38,7 +39,7 @@ export function ClearanceScreen() {
   });
 
   const requestMutation = useMutation({
-    mutationFn: () => requestClearance(crypto.randomUUID()),
+    mutationFn: () => requestClearance(generateUUID()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-clearance'] });
       Alert.alert('Clearance Initiated', 'A 72-hour clearance request has been created. All 3 members must approve before execution.');

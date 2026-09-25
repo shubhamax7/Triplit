@@ -12,6 +12,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCorrection } from './api';
 import { formatInr, parseAmountToPaise } from '../../lib/currency';
+import { generateUUID } from '../../lib/uuid';
 
 interface CorrectionModalProps {
   visible: boolean;
@@ -25,8 +26,8 @@ interface CorrectionModalProps {
 
 export function CorrectionModal({ visible, onClose, originalEntry }: CorrectionModalProps) {
   const queryClient = useQueryClient();
-  const reversalKey = useRef(crypto.randomUUID());
-  const adjustmentKey = useRef(crypto.randomUUID());
+  const reversalKey = useRef(generateUUID());
+  const adjustmentKey = useRef(generateUUID());
 
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -50,8 +51,8 @@ export function CorrectionModal({ visible, onClose, originalEntry }: CorrectionM
     setAmount('');
     setDescription('');
     setCategory('');
-    reversalKey.current = crypto.randomUUID();
-    adjustmentKey.current = crypto.randomUUID();
+    reversalKey.current = generateUUID();
+    adjustmentKey.current = generateUUID();
   };
 
   const handleOpen = () => {

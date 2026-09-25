@@ -12,6 +12,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createBilateralCorrection } from './api';
 import { formatInr, parseAmountToPaise } from '../../lib/currency';
+import { generateUUID } from '../../lib/uuid';
 
 interface BilateralCorrectionModalProps {
   visible: boolean;
@@ -29,8 +30,8 @@ export function BilateralCorrectionModal({
   originalEntry,
 }: BilateralCorrectionModalProps) {
   const queryClient = useQueryClient();
-  const reversalKey = useRef(crypto.randomUUID());
-  const adjustmentKey = useRef(crypto.randomUUID());
+  const reversalKey = useRef(generateUUID());
+  const adjustmentKey = useRef(generateUUID());
 
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -57,8 +58,8 @@ export function BilateralCorrectionModal({
     setAmount('');
     setDescription('');
     setCategory('');
-    reversalKey.current = crypto.randomUUID();
-    adjustmentKey.current = crypto.randomUUID();
+    reversalKey.current = generateUUID();
+    adjustmentKey.current = generateUUID();
   };
 
   const handleOpen = () => {

@@ -18,6 +18,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { z } from 'zod';
 import { createExpense } from './api';
 import { parseAmountToPaise } from '../../lib/currency';
+import { generateUUID } from '../../lib/uuid';
 import type { RootStackParamList } from '../../navigation/types';
 
 const expenseSchema = z.object({
@@ -37,7 +38,7 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 export function AddExpenseScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'AddExpense'>) {
   const queryClient = useQueryClient();
-  const idempotencyKey = useRef(crypto.randomUUID());
+  const idempotencyKey = useRef(generateUUID());
 
   const {
     control,
@@ -58,7 +59,7 @@ export function AddExpenseScreen({ navigation }: NativeStackScreenProps<RootStac
       queryClient.invalidateQueries({ queryKey: ['group-summary'] });
       queryClient.invalidateQueries({ queryKey: ['ledger-history'] });
       reset();
-      idempotencyKey.current = crypto.randomUUID();
+      idempotencyKey.current = generateUUID();
       navigation.goBack();
     },
     onError: (err: any) => {
