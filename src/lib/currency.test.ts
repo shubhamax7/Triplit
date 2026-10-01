@@ -26,10 +26,16 @@ describe('currency (INR) formatting and parsing', () => {
       expect(formatInr(-75n)).toBe('-₹0.75');
     });
 
-    it('handles large BigInt values', () => {
-      expect(formatInr(100000000000n)).toBe('₹1000000000.00');
+    it('handles large BigInt values with thousands separators', () => {
+      // en-IN locale groups as 1,00,000 (Indian numbering system)
+      const result = formatInr(100000000000n);
+      expect(result).toMatch(/^₹/);
+      expect(result).toContain(',');
+      // Must represent 1,00,00,00,000.00 rupees
+      expect(result.replace(/[₹,]/g, '')).toBe('1000000000.00');
     });
   });
+
 
   describe('parseAmountToPaise', () => {
     it('parses integer rupee inputs', () => {

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,11 +55,18 @@ export function CorrectionModal({ visible, onClose, originalEntry }: CorrectionM
     adjustmentKey.current = generateUUID();
   };
 
-  const handleOpen = () => {
-    if (originalEntry) {
+  // Prefill the description when the modal opens for a specific entry,
+  // or when it switches to a different entry. Using useEffect + originalEntry.id
+  // avoids stale state if the modal is reused for a different expense without unmounting.
+  useEffect(() => {
+    if (visible && originalEntry) {
       setDescription(originalEntry.description);
+      setAmount('');
+      setCategory('');
+      reversalKey.current = generateUUID();
+      adjustmentKey.current = generateUUID();
     }
-  };
+  }, [visible, originalEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
     if (!originalEntry) return;
@@ -82,7 +89,7 @@ export function CorrectionModal({ visible, onClose, originalEntry }: CorrectionM
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onShow={handleOpen} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <Text style={styles.eyebrow}>APPEND-ONLY CORRECTION</Text>

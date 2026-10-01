@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -62,11 +62,17 @@ export function BilateralCorrectionModal({
     adjustmentKey.current = generateUUID();
   };
 
-  const handleOpen = () => {
-    if (originalEntry) {
+  // Prefill form fields whenever the modal becomes visible for a new entry.
+  // Keying on originalEntry?.id prevents stale data when the modal is reused.
+  useEffect(() => {
+    if (visible && originalEntry) {
       setDescription(originalEntry.description);
+      setAmount('');
+      setCategory('');
+      reversalKey.current = generateUUID();
+      adjustmentKey.current = generateUUID();
     }
-  };
+  }, [visible, originalEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
     if (!originalEntry) return;
@@ -89,7 +95,7 @@ export function BilateralCorrectionModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onShow={handleOpen} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <Text style={styles.eyebrow}>BILATERAL CORRECTION</Text>

@@ -14,7 +14,7 @@ export function useBilateralPairs(currentMemberId: string | undefined) {
   return useQuery({
     queryKey: ['bilateral-pairs', currentMemberId],
     queryFn: async (): Promise<BilateralPairSummary[]> => {
-      if (!currentMemberId) return [];
+      if (!currentMemberId) throw new Error('Missing current member ID');
       const client = getSupabase();
 
       // Fetch the other members (exactly 2 counterparties)
@@ -25,10 +25,15 @@ export function useBilateralPairs(currentMemberId: string | undefined) {
         .eq('is_active', true);
       if (membersError) throw membersError;
 
-      const pairs: BilateralPairSummary[] = [];
+      const counterparties = members ?? [];
 
-      for (const counterparty of members ?? []) {
-        const txs = await fetchBilateralTransactions(counterparty.id);
+      // Fetch all counterparty transaction lists in parallel.
+      const txResults = await Promise.all(
+        counterparties.map((counterparty) => fetchBilateralTransactions(counterparty.id))
+      );
+
+      return counterparties.map((counterparty, i) => {
+        const txs = txResults[i];
         const entries: BilateralEntry[] = txs.map((tx) => ({
           payerMemberId: tx.payer_member_id,
           counterpartyMemberId: tx.counterparty_member_id,
@@ -36,20 +41,19 @@ export function useBilateralPairs(currentMemberId: string | undefined) {
           entryType: tx.entry_type,
         }));
         const netPaise = calculateBilateralLedger(currentMemberId, counterparty.id, entries);
-        pairs.push({
+        return {
           counterpartyId: counterparty.id,
           counterpartyName: counterparty.display_name,
           netPaise,
           transactions: txs,
-        });
-      }
-
-      return pairs;
+        };
+      });
     },
     enabled: Boolean(currentMemberId),
     staleTime: 30_000,
   });
 }
+
 
 export function useBilateralPairDetail(
   currentMemberId: string | undefined,

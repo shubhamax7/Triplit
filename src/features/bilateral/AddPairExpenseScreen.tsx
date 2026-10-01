@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +20,7 @@ import { createBilateralTransaction } from './api';
 import { parseAmountToPaise } from '../../lib/currency';
 import { generateUUID } from '../../lib/uuid';
 import { getSupabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthProvider';
+import { useCurrentMemberId } from '../../lib/hooks';
 import type { RootStackParamList } from '../../navigation/types';
 
 const pairExpenseSchema = z.object({
@@ -43,7 +43,7 @@ export function AddPairExpenseScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'AddPairExpense'>) {
   const queryClient = useQueryClient();
-  const { session } = useAuth();
+  const { memberId: currentMemberId } = useCurrentMemberId();
   const idempotencyKey = useRef(generateUUID());
 
   const initialCounterpartyId = route.params?.counterpartyId;
@@ -51,22 +51,11 @@ export function AddPairExpenseScreen({
     initialCounterpartyId ?? null
   );
 
-  const currentMemberQuery = useQuery({
-    queryKey: ['current-member-id', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await getSupabase().rpc('current_member_id');
-      if (error) throw error;
-      return data as string;
-    },
-  });
-
-  const currentMemberId = currentMemberQuery.data;
-
   // Query other members for the counterparty selection
   const otherMembersQuery = useQuery({
     queryKey: ['other-members', currentMemberId],
     queryFn: async () => {
-      if (!currentMemberId) return [];
+      if (!currentMemberId) throw new Error('Missing member ID');
       const { data, error } = await getSupabase()
         .from('members')
         .select('id, display_name, email')
@@ -80,10 +69,13 @@ export function AddPairExpenseScreen({
 
   const otherMembers = otherMembersQuery.data ?? [];
 
-  // Auto-select first counterparty if not set
-  if (!selectedCounterpartyId && otherMembers.length > 0) {
-    setSelectedCounterpartyId(otherMembers[0].id);
-  }
+  // Auto-select first counterparty if none is set yet — must be in an effect,
+  // not during render, to avoid illegal state updates.
+  useEffect(() => {
+    if (!selectedCounterpartyId && otherMembers.length > 0) {
+      setSelectedCounterpartyId(otherMembers[0].id);
+    }
+  }, [otherMembers, selectedCounterpartyId]);
 
   const {
     control,
@@ -123,11 +115,6 @@ export function AddPairExpenseScreen({
 
     try {
       const amountPaise = parseAmountToPaise(data.amount);
-      if (amountPaise <= 0n) {
-        Alert.alert('Invalid Amount', 'Amount must be greater than zero.');
-        return;
-      }
-
       mutation.mutate({
         idempotencyKey: idempotencyKey.current,
         counterpartyMemberId: selectedCounterpartyId,

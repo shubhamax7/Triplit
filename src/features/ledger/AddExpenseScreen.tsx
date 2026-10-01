@@ -81,10 +81,6 @@ export function AddExpenseScreen({ navigation }: NativeStackScreenProps<RootStac
   const onSubmit = (data: ExpenseFormData) => {
     try {
       const amountPaise = parseAmountToPaise(data.amount);
-      if (amountPaise <= 0n) {
-        Alert.alert('Invalid Amount', 'Expense must be greater than zero.');
-        return;
-      }
       mutation.mutate({
         idempotencyKey: idempotencyKey.current,
         amountPaise,

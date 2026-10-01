@@ -7,12 +7,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useBilateralPairDetail } from './queries';
 import { formatInr } from '../../lib/currency';
-import { getSupabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthProvider';
+import { useCurrentMemberId } from '../../lib/hooks';
 import { BilateralCorrectionModal } from './BilateralCorrectionModal';
 import type { BilateralTransactionRecord } from './api';
 import type { RootStackParamList } from '../../navigation/types';
@@ -22,20 +20,10 @@ export function PairDetailScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'PairDetail'>) {
   const { counterpartyId, counterpartyName } = route.params;
-  const { session } = useAuth();
+  const { memberId: currentMemberId, isLoading: isMemberLoading } = useCurrentMemberId();
   const [selectedEntry, setSelectedEntry] = useState<{ id: string; description: string; amountPaise: bigint } | null>(null);
   const [isCorrectionVisible, setIsCorrectionVisible] = useState(false);
 
-  const currentMemberQuery = useQuery({
-    queryKey: ['current-member-id', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await getSupabase().rpc('current_member_id');
-      if (error) throw error;
-      return data as string;
-    },
-  });
-
-  const currentMemberId = currentMemberQuery.data;
   const { data: detail, isLoading, isError, refetch } = useBilateralPairDetail(
     currentMemberId,
     counterpartyId
@@ -50,7 +38,7 @@ export function PairDetailScreen({
     setIsCorrectionVisible(true);
   };
 
-  if (isLoading || currentMemberQuery.isLoading) {
+  if (isLoading || isMemberLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#243f7a" />
@@ -62,6 +50,9 @@ export function PairDetailScreen({
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Could not load pair history.</Text>
+        <Pressable style={styles.retryBtn} onPress={() => void refetch()}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </Pressable>
       </View>
     );
   }
@@ -199,7 +190,9 @@ export function PairDetailScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#243f7a', borderRadius: 10 },
+  retryBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
   listContent: { padding: 20, gap: 14 },
   header: { marginBottom: 12 },
   settlementWidget: {

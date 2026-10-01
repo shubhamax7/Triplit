@@ -18,6 +18,7 @@ import {
   type SettlementSnapshotRecord,
 } from './api';
 import { formatInr } from '../../lib/currency';
+import { getSupabase } from '../../lib/supabase';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -97,9 +98,26 @@ export function MonthlySummaryScreen() {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Could not load accounting periods.</Text>
+        <Pressable style={styles.retryBtn} onPress={() => void refetch()}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </Pressable>
       </View>
     );
   }
+
+  // Fetch members for display name resolution in snapshots.
+  const { data: members } = useQuery({
+    queryKey: ['group-members'],
+    queryFn: async () => {
+      const { data, error } = await getSupabase()
+        .from('members')
+        .select('id, display_name')
+        .order('member_order');
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; display_name: string }>;
+    },
+    staleTime: Infinity,
+  });
 
   return (
     <View style={styles.container}>
@@ -188,7 +206,7 @@ export function MonthlySummaryScreen() {
                   {snapshotQuery.isLoading ? (
                     <ActivityIndicator size="small" color="#243f7a" />
                   ) : snapshotQuery.data ? (
-                    <SnapshotDetails snapshot={snapshotQuery.data} />
+                    <SnapshotDetails snapshot={snapshotQuery.data} members={members ?? []} />
                   ) : (
                     <Text style={styles.muted}>No snapshot generated yet for this period.</Text>
                   )}
@@ -202,7 +220,16 @@ export function MonthlySummaryScreen() {
   );
 }
 
-function SnapshotDetails({ snapshot }: { snapshot: SettlementSnapshotRecord }) {
+function SnapshotDetails({
+  snapshot,
+  members,
+}: {
+  snapshot: SettlementSnapshotRecord;
+  members: Array<{ id: string; display_name: string }>;
+}) {
+  const memberName = (id: string) =>
+    members.find((m) => m.id === id)?.display_name ?? id.slice(0, 8) + '…';
+
   return (
     <View style={styles.snapshotContent}>
       <View style={styles.rowBetween}>
@@ -219,7 +246,7 @@ function SnapshotDetails({ snapshot }: { snapshot: SettlementSnapshotRecord }) {
       ) : (
         snapshot.transfers.map((t, idx) => (
           <Text key={idx} style={styles.transferText}>
-            Member {t.from_member_id.slice(0, 6)} → Member {t.to_member_id.slice(0, 6)}:{' '}
+            {memberName(t.from_member_id)} → {memberName(t.to_member_id)}:{' '}
             <Text style={styles.bold}>{formatInr(BigInt(t.amount_paise))}</Text>
           </Text>
         ))
@@ -230,7 +257,9 @@ function SnapshotDetails({ snapshot }: { snapshot: SettlementSnapshotRecord }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#243f7a', borderRadius: 10 },
+  retryBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
   listContent: { padding: 20, gap: 14 },
   header: { marginBottom: 12 },
   eyebrow: { color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },

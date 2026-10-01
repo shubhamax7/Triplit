@@ -8,31 +8,20 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCurrentGroupSummary } from '../ledger/queries';
 import { useBilateralPairs } from '../bilateral/queries';
 import { formatInr } from '../../lib/currency';
 import { useAuth } from '../auth/AuthProvider';
-import { getSupabase } from '../../lib/supabase';
+import { useCurrentMemberId } from '../../lib/hooks';
 import type { RootStackParamList } from '../../navigation/types';
 
 export function DashboardScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'Dashboard'>) {
-  const { session, signOut } = useAuth();
+  const { signOut } = useAuth();
   const summary = useCurrentGroupSummary();
-
-  const currentMemberQuery = useQuery({
-    queryKey: ['current-member-id', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await getSupabase().rpc('current_member_id');
-      if (error) throw error;
-      return data as string;
-    },
-  });
-
-  const currentMemberId = currentMemberQuery.data;
+  const { memberId: currentMemberId } = useCurrentMemberId();
   const pairSummary = useBilateralPairs(currentMemberId);
 
   const memberName = (id: string) =>
@@ -68,8 +57,11 @@ export function DashboardScreen({
       ) : summary.isError ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>
-            Could not load the group ledger. Pull to retry after checking your connection.
+            Could not load the group ledger. Pull down to retry.
           </Text>
+          <Pressable style={styles.retryBtn} onPress={() => void summary.refetch()}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </Pressable>
         </View>
       ) : summary.data ? (
         <View style={styles.groupSection}>
@@ -170,6 +162,13 @@ export function DashboardScreen({
 
         {pairSummary.isLoading ? (
           <ActivityIndicator color="#243f7a" />
+        ) : pairSummary.isError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>Could not load pair expenses.</Text>
+            <Pressable style={styles.retryBtn} onPress={() => void pairSummary.refetch()}>
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </Pressable>
+          </View>
         ) : (
           <View style={styles.pairsGrid}>
             {pairSummary.data?.map((pair) => {
@@ -271,8 +270,10 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
   heading: { color: '#0f172a', fontSize: 26, fontWeight: '800', marginTop: 4 },
   loaderContainer: { padding: 40, alignItems: 'center' },
-  errorBox: { backgroundColor: '#fee2e2', padding: 16, borderRadius: 12 },
+  errorBox: { backgroundColor: '#fee2e2', padding: 16, borderRadius: 12, gap: 10 },
   errorText: { color: '#dc2626', fontSize: 14 },
+  retryBtn: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#dc2626', borderRadius: 8 },
+  retryBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
   groupSection: { gap: 16 },
   mainCard: {
     backgroundColor: '#ffffff',

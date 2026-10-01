@@ -7,32 +7,19 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useBilateralPairs } from './queries';
 import { formatInr } from '../../lib/currency';
-import { getSupabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthProvider';
+import { useCurrentMemberId } from '../../lib/hooks';
 import type { RootStackParamList } from '../../navigation/types';
 
 export function PairExpensesScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'PairExpenses'>) {
-  const { session } = useAuth();
-
-  const currentMemberQuery = useQuery({
-    queryKey: ['current-member-id', session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await getSupabase().rpc('current_member_id');
-      if (error) throw error;
-      return data as string;
-    },
-  });
-
-  const currentMemberId = currentMemberQuery.data;
+  const { memberId: currentMemberId, isLoading: isMemberLoading } = useCurrentMemberId();
   const { data: pairs, isLoading, isError, refetch } = useBilateralPairs(currentMemberId);
 
-  if (isLoading || currentMemberQuery.isLoading) {
+  if (isLoading || isMemberLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#243f7a" />
@@ -44,6 +31,9 @@ export function PairExpensesScreen({
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Could not load bilateral pairs.</Text>
+        <Pressable style={styles.retryBtn} onPress={() => void refetch()}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </Pressable>
       </View>
     );
   }
@@ -127,7 +117,9 @@ export function PairExpensesScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#243f7a', borderRadius: 10 },
+  retryBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
   listContent: { padding: 20, paddingBottom: 90, gap: 16 },
   header: { marginBottom: 12 },
   eyebrow: { color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
